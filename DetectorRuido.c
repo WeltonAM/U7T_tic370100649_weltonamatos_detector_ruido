@@ -3,12 +3,15 @@
 #include "hardware/adc.h"
 #include "hardware/timer.h"
 #include "pico/bootrom.h"
+#include "hardware/pio.h"
+#include "hardware/clocks.h"
+#include "ws2812.pio.h"
 
 // Pin definitions
-const uint LED_PIN_RED = 13;   // Red LED on GPIO13
-const uint LED_PIN_GREEN = 11; // Green LED on GPIO11
-const uint MICROPHONE = 28;    // Microphone on GPIO28 (ADC2)
-const uint BTN_B_PIN = 6;      // Button B on GPIO6
+const uint MICROPHONE = 28; // Microphone on GPIO28 (ADC2)
+const uint BTN_B_PIN = 6;   // Button B on GPIO6
+#define WS2812_PIN 7        // WS2812 LED matrix pin
+#define NUM_PIXELS 25       // Number of pixels in 5x5 matrix
 
 // Range settings
 const uint RANGE_MIN = 500;  // Minimum acceptable value
@@ -22,6 +25,9 @@ const uint DEBOUNCE_DELAY = 200;      // Debounce delay in milliseconds
 volatile bool button_b_pressed = false; // Flag for Button B press
 uint32_t last_button_b_time = 0;        // Last Button B press timestamp
 bool out_of_range = false;              // Flag to track if noise went out of range
+PIO pio = pio0;
+int sm = 0;
+uint32_t led_buffer[NUM_PIXELS] = {0};
 
 // Function to enter BOOTSEL mode
 void enter_bootsel()
@@ -62,32 +68,60 @@ void setup_button_b_interrupt()
     gpio_set_irq_enabled_with_callback(BTN_B_PIN, GPIO_IRQ_EDGE_FALL, true, &button_isr_handler);
 }
 
+// WS2812 Functions
+static inline void put_pixel(uint32_t pixel_grb)
+{
+    pio_sm_put_blocking(pio, sm, pixel_grb << 8u);
+}
+
+static inline uint32_t urgb_u32(uint8_t r, uint8_t g, uint8_t b)
+{
+    return ((uint32_t)(r) << 8) | ((uint32_t)(g) << 16) | (uint32_t)(b);
+}
+
+void set_leds_from_buffer()
+{
+    for (int i = 0; i < NUM_PIXELS; i++)
+    {
+        put_pixel(led_buffer[i]);
+    }
+}
+
+void set_all_leds(uint8_t r, uint8_t g, uint8_t b)
+{
+    for (int i = 0; i < NUM_PIXELS; i++)
+    {
+        led_buffer[i] = urgb_u32(r, g, b);
+    }
+    set_leds_from_buffer();
+}
+
 int main()
 {
-    gpio_init(LED_PIN_RED);
-    gpio_init(LED_PIN_GREEN);
-    gpio_set_dir(LED_PIN_RED, GPIO_OUT);
-    gpio_set_dir(LED_PIN_GREEN, GPIO_OUT);
+    stdio_init_all();
 
+    // Initialize ADC for microphone
     adc_init();
     adc_gpio_init(MICROPHONE);
+
+    // Initialize WS2812
+    uint offset = pio_add_program(pio, &ws2812_program);
+    ws2812_program_init(pio, sm, offset, WS2812_PIN, 800000, false);
 
     setup_button_b_interrupt();
 
     // Calculate sampling interval
     uint64_t interval_us = 1000000 / SAMPLES_PER_SECOND;
 
-    // Start with green LED on
-    gpio_put(LED_PIN_GREEN, true);
-    gpio_put(LED_PIN_RED, false);
+    // Start with green LEDs (in range)
+    set_all_leds(0, 10, 0); // Moderately bright green
 
     while (true)
     {
         if (button_b_pressed)
         {
             button_b_pressed = false;
-            gpio_put(LED_PIN_RED, false);
-            gpio_put(LED_PIN_GREEN, false);
+            set_all_leds(0, 0, 0); // Turn off all LEDs
             enter_bootsel();
         }
 
@@ -101,8 +135,7 @@ int main()
             {
                 // Noise out of range detected
                 out_of_range = true;
-                gpio_put(LED_PIN_GREEN, false);
-                gpio_put(LED_PIN_RED, true);
+                set_all_leds(10, 0, 0); // Moderately bright red
             }
         }
 
