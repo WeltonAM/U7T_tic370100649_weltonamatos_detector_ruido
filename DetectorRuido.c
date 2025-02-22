@@ -11,8 +11,8 @@ const uint MICROPHONE = 28;    // Microphone on GPIO28 (ADC2)
 const uint BTN_B_PIN = 6;      // Button B on GPIO6
 
 // Range settings
-const uint RANGE_MIN = 2000; // Minimum acceptable value
-const uint RANGE_MAX = 2080; // Maximum acceptable value
+const uint RANGE_MIN = 500;  // Minimum acceptable value
+const uint RANGE_MAX = 3500; // Maximum acceptable value
 
 // Sampling and debounce configuration
 const uint SAMPLES_PER_SECOND = 8000; // 8 kHz sampling rate
@@ -21,6 +21,7 @@ const uint DEBOUNCE_DELAY = 200;      // Debounce delay in milliseconds
 // Global variables
 volatile bool button_b_pressed = false; // Flag for Button B press
 uint32_t last_button_b_time = 0;        // Last Button B press timestamp
+bool out_of_range = false;              // Flag to track if noise went out of range
 
 // Function to enter BOOTSEL mode
 void enter_bootsel()
@@ -76,6 +77,10 @@ int main()
     // Calculate sampling interval
     uint64_t interval_us = 1000000 / SAMPLES_PER_SECOND;
 
+    // Start with green LED on
+    gpio_put(LED_PIN_GREEN, true);
+    gpio_put(LED_PIN_RED, false);
+
     while (true)
     {
         if (button_b_pressed)
@@ -86,18 +91,19 @@ int main()
             enter_bootsel();
         }
 
-        adc_select_input(2);
-        uint16_t mic_value = adc_read();
+        // Only monitor if we haven't detected out of range yet
+        if (!out_of_range)
+        {
+            adc_select_input(2);
+            uint16_t mic_value = adc_read();
 
-        if (mic_value >= RANGE_MIN && mic_value <= RANGE_MAX)
-        {
-            gpio_put(LED_PIN_GREEN, true);
-            gpio_put(LED_PIN_RED, false);
-        }
-        else
-        {
-            gpio_put(LED_PIN_GREEN, false);
-            gpio_put(LED_PIN_RED, true);
+            if (mic_value < RANGE_MIN || mic_value > RANGE_MAX)
+            {
+                // Noise out of range detected
+                out_of_range = true;
+                gpio_put(LED_PIN_GREEN, false);
+                gpio_put(LED_PIN_RED, true);
+            }
         }
 
         sleep_us(interval_us);
