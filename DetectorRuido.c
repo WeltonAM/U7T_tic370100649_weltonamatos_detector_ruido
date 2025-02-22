@@ -174,6 +174,14 @@ int main()
                 // Noise out of range detected
                 out_of_range = true;
                 set_all_leds(10, 0, 0); // Moderately bright red
+
+                // Display the out-of-range value
+                char buffer[32];
+                snprintf(buffer, sizeof(buffer), "Valor: %u", mic_value);
+                ssd1306_fill(&ssd, false); // Clear display
+                ssd1306_draw_string(&ssd, "Fora do range!", 0, 0);
+                ssd1306_draw_string(&ssd, buffer, 0, 10);
+                ssd1306_send_data(&ssd);
             }
         }
 
