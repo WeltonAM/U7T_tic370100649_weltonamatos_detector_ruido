@@ -30,7 +30,7 @@ project(DetectorRuido C CXX ASM)
 pico_sdk_init()
 
 # Define o executável antes de adicionar dependências
-add_executable(DetectorRuido DetectorRuido.c)
+add_executable(DetectorRuido DetectorRuido.c lib/ssd1306.c)
 
 # Gera o cabeçalho para o programa PIO em lib/ws2812.pio
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/generated)
@@ -51,6 +51,7 @@ target_link_libraries(DetectorRuido
     hardware_gpio
     hardware_pio
     hardware_clocks
+    hardware_i2c 
 )
 
 # Inclui diretórios adicionais

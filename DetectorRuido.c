@@ -5,13 +5,20 @@
 #include "pico/bootrom.h"
 #include "hardware/pio.h"
 #include "hardware/clocks.h"
+#include "hardware/i2c.h"
 #include "ws2812.pio.h"
+#include "lib/ssd1306.h"
+#include "lib/font.h"
 
 // Pin definitions
 const uint MICROPHONE = 28; // Microphone on GPIO28 (ADC2)
 const uint BTN_B_PIN = 6;   // Button B on GPIO6
 #define WS2812_PIN 7        // WS2812 LED matrix pin
 #define NUM_PIXELS 25       // Number of pixels in 5x5 matrix
+#define I2C_PORT i2c1       // I2C port for SSD1306
+#define I2C_SDA 14          // SDA pin for SSD1306
+#define I2C_SCL 15          // SCL pin for SSD1306
+#define SSD1306_ADDR 0x3C   // SSD1306 I2C address
 
 // Range settings
 const uint RANGE_MIN = 500;  // Minimum acceptable value
@@ -28,6 +35,7 @@ bool out_of_range = false;              // Flag to track if noise went out of ra
 PIO pio = pio0;
 int sm = 0;
 uint32_t led_buffer[NUM_PIXELS] = {0};
+ssd1306_t ssd; // SSD1306 display structure
 
 // Function to enter BOOTSEL mode
 void enter_bootsel()
@@ -96,6 +104,19 @@ void set_all_leds(uint8_t r, uint8_t g, uint8_t b)
     set_leds_from_buffer();
 }
 
+// SSD1306 initialization function
+void setup_ssd1306()
+{
+    i2c_init(I2C_PORT, 400 * 1000);
+    gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
+    gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
+    gpio_pull_up(I2C_SDA);
+    gpio_pull_up(I2C_SCL);
+
+    ssd1306_init(&ssd, WIDTH, HEIGHT, false, SSD1306_ADDR, I2C_PORT);
+    ssd1306_config(&ssd);
+}
+
 int main()
 {
     stdio_init_all();
@@ -108,7 +129,22 @@ int main()
     uint offset = pio_add_program(pio, &ws2812_program);
     ws2812_program_init(pio, sm, offset, WS2812_PIN, 800000, false);
 
+    // Initialize SSD1306
+    setup_ssd1306();
+
     setup_button_b_interrupt();
+
+    // Display initial message
+    ssd1306_fill(&ssd, false); // Clear display
+    ssd1306_draw_string(&ssd, "Detector de", 0, 0);
+    ssd1306_draw_string(&ssd, "Ruido", 0, 10);
+    ssd1306_draw_string(&ssd, "Iniciado", 0, 20);
+    ssd1306_send_data(&ssd);
+    sleep_ms(2000); // Show message for 2 seconds
+
+    // Clear display after showing message
+    ssd1306_fill(&ssd, false);
+    ssd1306_send_data(&ssd);
 
     // Calculate sampling interval
     uint64_t interval_us = 1000000 / SAMPLES_PER_SECOND;
@@ -121,7 +157,9 @@ int main()
         if (button_b_pressed)
         {
             button_b_pressed = false;
-            set_all_leds(0, 0, 0); // Turn off all LEDs
+            set_all_leds(0, 0, 0);     // Turn off all LEDs
+            ssd1306_fill(&ssd, false); // Clear display
+            ssd1306_send_data(&ssd);
             enter_bootsel();
         }
 
