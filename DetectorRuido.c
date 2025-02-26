@@ -54,10 +54,41 @@ int sm = 0;
 uint32_t led_buffer[NUM_PIXELS] = {0};
 ssd1306_t ssd;
 
+// WS2812 Functions (movidas para o topo)
+static inline void put_pixel(uint32_t pixel_grb)
+{
+    pio_sm_put_blocking(pio, sm, pixel_grb << 8u);
+}
+
+static inline uint32_t urgb_u32(uint8_t r, uint8_t g, uint8_t b)
+{
+    return ((uint32_t)(r) << 8) | ((uint32_t)(g) << 16) | (uint32_t)(b);
+}
+
+void set_leds_from_buffer()
+{
+    for (int i = 0; i < NUM_PIXELS; i++)
+    {
+        put_pixel(led_buffer[i]);
+    }
+}
+
+void set_all_leds(uint8_t r, uint8_t g, uint8_t b)
+{
+    for (int i = 0; i < NUM_PIXELS; i++)
+    {
+        led_buffer[i] = urgb_u32(r, g, b);
+    }
+    set_leds_from_buffer();
+}
+
 // Function to enter BOOTSEL mode
 void enter_bootsel()
 {
-    reset_usb_boot(0, 0);
+    set_all_leds(0, 0, 0);  // Garante que os LEDs sejam apagados
+    set_leds_from_buffer(); // Força envio do buffer para os LEDs
+    sleep_ms(50);           // Pequena pausa para garantir que os LEDs sejam apagados
+    reset_usb_boot(0, 0);   // Entra no modo BOOTSEL
 }
 
 // Debounce function for button presses
@@ -104,34 +135,6 @@ void setup_button_interrupts()
 
     gpio_set_irq_enabled_with_callback(BTN_B_PIN, GPIO_IRQ_EDGE_FALL, true, &button_isr_handler);
     gpio_set_irq_enabled_with_callback(BTN_A_PIN, GPIO_IRQ_EDGE_FALL, true, &button_isr_handler);
-}
-
-// WS2812 Functions
-static inline void put_pixel(uint32_t pixel_grb)
-{
-    pio_sm_put_blocking(pio, sm, pixel_grb << 8u);
-}
-
-static inline uint32_t urgb_u32(uint8_t r, uint8_t g, uint8_t b)
-{
-    return ((uint32_t)(r) << 8) | ((uint32_t)(g) << 16) | (uint32_t)(b);
-}
-
-void set_leds_from_buffer()
-{
-    for (int i = 0; i < NUM_PIXELS; i++)
-    {
-        put_pixel(led_buffer[i]);
-    }
-}
-
-void set_all_leds(uint8_t r, uint8_t g, uint8_t b)
-{
-    for (int i = 0; i < NUM_PIXELS; i++)
-    {
-        led_buffer[i] = urgb_u32(r, g, b);
-    }
-    set_leds_from_buffer();
 }
 
 // SSD1306 initialization function
@@ -184,6 +187,13 @@ void start_buzzer(uint32_t duration_ms)
 
     while (time_us_32() < end_time)
     {
+        // Verifica se algum botão foi pressionado para interromper o buzzer
+        if (button_a_pressed || button_b_pressed)
+        {
+            gpio_put(BUZZER_PIN, 0); // Desliga o buzzer imediatamente
+            return;                  // Sai da função
+        }
+
         gpio_put(BUZZER_PIN, 1);
         sleep_us(half_period);
         gpio_put(BUZZER_PIN, 0);
@@ -199,24 +209,34 @@ void send_sos_buzzer()
     for (int i = 0; i < 3; i++)
     {
         start_buzzer(DOT_TIME);
+        if (button_a_pressed || button_b_pressed)
+            return; // Interrompe se botão for pressionado
         sleep_ms(GAP_TIME);
     }
 
     sleep_ms(LETTER_GAP);
+    if (button_a_pressed || button_b_pressed)
+        return;
 
     // 3 traços (O)
     for (int i = 0; i < 3; i++)
     {
         start_buzzer(DASH_TIME);
+        if (button_a_pressed || button_b_pressed)
+            return;
         sleep_ms(GAP_TIME);
     }
 
     sleep_ms(LETTER_GAP);
+    if (button_a_pressed || button_b_pressed)
+        return;
 
     // 3 pontos (S)
     for (int i = 0; i < 3; i++)
     {
         start_buzzer(DOT_TIME);
+        if (button_a_pressed || button_b_pressed)
+            return;
         sleep_ms(GAP_TIME);
     }
 }
@@ -297,7 +317,9 @@ int main()
         if (button_b_pressed)
         {
             button_b_pressed = false;
-            set_all_leds(0, 0, 0);
+            set_all_leds(0, 0, 0);  // Desliga os LEDs
+            set_leds_from_buffer(); // Força a atualização dos LEDs
+            sleep_ms(50);           // Pequena pausa para garantir que os LEDs sejam apagados
             ssd1306_fill(&ssd, false);
             ssd1306_send_data(&ssd);
             gpio_put(BUZZER_PIN, 0); // Desliga o buzzer antes de entrar no BOOTSEL
@@ -313,6 +335,7 @@ int main()
         if (step < 3) // Configuration steps
         {
             set_all_leds(0, 0, 10); // Blue LEDs during configuration
+            update_display();
 
             // Handle Button A (proceed to next step)
             if (button_a_pressed)
@@ -406,8 +429,6 @@ int main()
                         digits_min[i] = 0;
                     for (int i = 0; i < 4; i++)
                         digits_max[i] = 0;
-                    set_all_leds(0, 0, 10); // Blue LEDs when restarting configuration
-                    update_display();
                 }
             }
         }
