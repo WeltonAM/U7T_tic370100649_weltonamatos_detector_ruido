@@ -41,6 +41,7 @@
         "gpio.h": "c",
         "clocks.h": "c",
         "stdlib.h": "c",
-        "pio.h": "c"
+        "pio.h": "c",
+        "font.h": "c"
     }
 }

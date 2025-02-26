@@ -29,11 +29,12 @@ const uint SAMPLES_PER_SECOND = 8000; // 8 kHz sampling rate
 const uint DEBOUNCE_DELAY = 200;      // Debounce delay in milliseconds
 
 // Buzzer configuration
-#define BUZZER_FREQ_HZ 3200
+#define BUZZER_FREQ_HZ 2000
 #define DOT_TIME 200
 #define DASH_TIME 800
 #define GAP_TIME 125
 #define LETTER_GAP 250
+#define CYCLE_GAP 3000 // Pausa entre ciclos SOS
 
 // Global variables
 volatile bool button_b_pressed = false;
@@ -284,9 +285,9 @@ int main()
 
     setup_button_interrupts();
 
-    // Initial display
+    // Initial display with blue LEDs for configuration
     update_display();
-    set_all_leds(0, 10, 0); // Green LEDs
+    set_all_leds(0, 0, 10); // Blue LEDs
 
     uint64_t interval_us = 1000000 / SAMPLES_PER_SECOND;
 
@@ -299,6 +300,7 @@ int main()
             set_all_leds(0, 0, 0);
             ssd1306_fill(&ssd, false);
             ssd1306_send_data(&ssd);
+            gpio_put(BUZZER_PIN, 0); // Desliga o buzzer antes de entrar no BOOTSEL
             enter_bootsel();
         }
 
@@ -310,6 +312,8 @@ int main()
 
         if (step < 3) // Configuration steps
         {
+            set_all_leds(0, 0, 10); // Blue LEDs during configuration
+
             // Handle Button A (proceed to next step)
             if (button_a_pressed)
             {
@@ -322,6 +326,7 @@ int main()
                     threshold_max = digits_max[0] * 1000 + digits_max[1] * 100 + digits_max[2] * 10 + digits_max[3];
                     program_running = true;
                     update_display();
+                    set_all_leds(0, 10, 0); // Green LEDs when configuration is complete
                     sleep_ms(2000);
                 }
                 update_display();
@@ -381,22 +386,29 @@ int main()
                     ssd1306_draw_string(&ssd, buffer, 0, 20);
                     ssd1306_draw_string(&ssd, "A: Reiniciar", 0, 40);
                     ssd1306_send_data(&ssd);
-                    send_sos_buzzer(); // Aciona o sinal SOS no buzzer
                 }
             }
-            else if (button_a_pressed) // Restart configuration
+            else
             {
-                button_a_pressed = false;
-                step = 0;
-                digit_pos = 0;
-                out_of_range = false;
-                program_running = false;
-                for (int i = 0; i < 3; i++)
-                    digits_min[i] = 0;
-                for (int i = 0; i < 4; i++)
-                    digits_max[i] = 0;
-                set_all_leds(0, 10, 0); // Green LEDs
-                update_display();
+                // Repetir o SOS enquanto estiver fora do range
+                send_sos_buzzer();
+                sleep_ms(CYCLE_GAP); // Pausa entre ciclos SOS
+
+                // Verificar botões para sair do estado out_of_range
+                if (button_a_pressed) // Restart configuration
+                {
+                    button_a_pressed = false;
+                    step = 0;
+                    digit_pos = 0;
+                    out_of_range = false;
+                    program_running = false;
+                    for (int i = 0; i < 3; i++)
+                        digits_min[i] = 0;
+                    for (int i = 0; i < 4; i++)
+                        digits_max[i] = 0;
+                    set_all_leds(0, 0, 10); // Blue LEDs when restarting configuration
+                    update_display();
+                }
             }
         }
 
