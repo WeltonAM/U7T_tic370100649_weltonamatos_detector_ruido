@@ -25,7 +25,7 @@ A documentação será baseada em referências como Cugnascas [01] e materiais s
 
 A execução seguirá um método simplificado, amplamente utilizado em projetos embarcados, dividido em cinco etapas:
 
-1. **Definição do Escopo**: O sistema embarcado utilizará o microfone da BitDogLab para medir ruído ambiente, comparando-o a um range ajustável via joystick. Feedback será dado pela matriz de LEDs (verde para dentro do range, vermelho para fora), buzzer (sinal SOS) e display SSD1306 (valor fora do range). Botões A e B, além do joystick, adicionarão controle ao sistema.
+1. **Definição do Escopo**: O sistema embarcado utilizará o microfone da BitDogLab para medir ruído ambiente, comparando-o a um range ajustável via joystick. Feedback será dado pela matriz de LEDs (azul para setup, verde para dentro do range, vermelho para fora), buzzer (sinal SOS) e display SSD1306 (valor fora do range). Botões A e B, além do joystick, adicionarão controle ao sistema.
 2. **Pesquisa de Projetos Correlatos**: Análise de soluções como monitores de ruído com ESP32 ou alarmes com micro:bit, destacando a inovação do uso de joystick para ranges dinâmicos.
 3. **Especificação de Hardware**: Inclui microfone, matriz de LEDs, SSD1306, buzzer, botões A e B, e joystick, todos conectados ao RP2040.
 4. **Especificação de Software**: Desenvolvimento em C no Visual Studio Code com extensões Raspberry Pi Pico, incluindo funções para leitura de ruído, controle de periféricos e interação com botões/joystick.
@@ -51,7 +51,7 @@ O projeto é um detector de ruído ambiental implementado na BitDogLab, utilizan
 - Reiniciar o programa com o botão A e entrar no modo BOOTSEL com o botão B.
 
 #### Descrição do Funcionamento
-O microfone captura o ruído, cujo valor é comparado a um range ajustável (ex.: 50-80 dB) definido pelo usuário via joystick e confirmado pelo botão do joystick. A matriz de LEDs pisca em verde se o ruído estiver no range, ou vermelho se estiver fora, acionando o buzzer (SOS) e exibindo o valor no SSD1306. O botão A reinicia o programa; o botão B entra no modo BOOTSEL, limpando LEDs e display.
+O microfone captura o ruído, cujo valor é comparado a um range ajustável (ex.: 100-4000 dB) definido pelo usuário via joystick e confirmado pelo botão do A. A matriz de LEDs acende em verde se o ruído estiver no range, ou vermelho se estiver fora, acionando o buzzer com sinal SOS e exibindo o valor no SSD1306. O botão A reinicia o programa; o botão B entra no modo BOOTSEL, limpando LEDs e display.
 
 #### Justificativa
 O projeto atende à necessidade de monitoramento acústico em ambientes como setores industriais, escritórios, residências, oferecendo uma solução compacta, interativa e escalável.
@@ -78,9 +78,9 @@ O projeto atende à necessidade de monitoramento acústico em ambientes como set
 #### Configuração de Cada Bloco & Descrição da Pinagem Usada
 - **Microfone**: Pino ADC (ex.: GP28).
 - **Matriz de LEDs**: GPIO 7.
-- **Display SSD1306**: I2C (SDA em GP20, SCL em GP21).
-- **Buzzer**: PWM (ex.: GP16).
-- **Joystick**: Eixos X/Y em ADC (GP26, GP27), botão em GPIO (GP22).
+- **Display SSD1306**: I2C (SDA em GP14, SCL em GP15). 
+- **Buzzer**: PWM (ex.: GP21).
+- **Joystick**: Eixos X/Y em ADC (GP26, GP27).
 - **Botão A**: GPIO (ex.: GP5).
 - **Botão B**: GPIO (ex.: GP6).
 
@@ -130,14 +130,14 @@ Não aplicável (futuramente, para API, a definir).
 ### d) Execução do Projeto
 
 #### Metodologia
-- Pesquisa sobre programação em C para RP2040 e uso de joystick.
+- Pesquisa sobre conceito de embarcado e hardware único.
 - Escolha da BitDogLab como hardware único.
 - Configuração do Visual Studio Code com extensões Raspberry Pi Pico.
 - Desenvolvimento em C, compilação e depuração.
 
 #### Testes de Validação
 - Teste de ajuste de range com joystick.
-- Verificação de LEDs, buzzer e SSD1306 com ruídos variados (ex.: 40 dB, 60 dB, 90 dB).
+- Verificação de LEDs, buzzer e SSD1306.
 - Teste dos botões A (reinício) e B (BOOTSEL).
 
 #### Discussão dos Resultados
