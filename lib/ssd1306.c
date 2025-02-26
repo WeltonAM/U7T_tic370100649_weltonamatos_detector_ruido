@@ -164,18 +164,25 @@ void ssd1306_vline(ssd1306_t *ssd, uint8_t x, uint8_t y0, uint8_t y1, bool value
 void ssd1306_draw_char(ssd1306_t *ssd, char c, uint8_t x, uint8_t y)
 {
   uint16_t index = 0;
-  char ver = c;
   if (c >= 'A' && c <= 'Z')
   {
-    index = (c - 'A' + 11) * 8;
+    index = (c - 'A' + 11) * 8; // 'A' = 11
   }
   else if (c >= '0' && c <= '9')
   {
-    index = (c - '0' + 1) * 8;
+    index = (c - '0' + 1) * 8; // '0' = 1
   }
   else if (c >= 'a' && c <= 'z')
   {
-    index = (c - 'a' + 37) * 8;
+    index = (c - 'a' + 37) * 8; // 'a' = 37
+  }
+  else if (c == ':')
+  {
+    index = 63 * 8; // ':' na posição 63
+  }
+  else
+  {
+    index = 0; // Espaço em branco para caracteres desconhecidos
   }
 
   for (uint8_t i = 0; i < 8; ++i)
