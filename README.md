@@ -23,13 +23,51 @@ A documentação será baseada em referências como Cugnascas [01] e materiais s
 
 ## 3. Passo a Passo da Execução
 
-A execução seguirá um método simplificado, amplamente utilizado em projetos embarcados, dividido em cinco etapas:
+Passo 1: Inicializando o Sistema
+Conectar o Raspberry Pi Pico ao computador usando um cabo micro USB.
+Carregar o programa no Raspberry Pi Pico. Para isso, compile o código fornecido e faça o upload do arquivo .uf2 no dispositivo montado.
+O sistema inicializará automaticamente. Você verá um texto de boas-vindas no display SSD1306 e os LEDs WS2812 acesos em azul, indicando que o sistema está pronto para ser configurado.
 
-1. **Definição do Escopo**: O sistema embarcado utilizará o microfone da BitDogLab para medir ruído ambiente, comparando-o a um range ajustável via joystick. Feedback será dado pela matriz de LEDs (azul para setup, verde para dentro do range, vermelho para fora), buzzer (sinal SOS) e display SSD1306 (valor fora do range). Botões A e B, além do joystick, adicionarão controle ao sistema.
-2. **Pesquisa de Projetos Correlatos**: Análise de soluções como monitores de ruído com ESP32 ou alarmes com micro:bit, destacando a inovação do uso de joystick para ranges dinâmicos.
-3. **Especificação de Hardware**: Inclui microfone, matriz de LEDs, SSD1306, buzzer, botões A e B, e joystick, todos conectados ao RP2040.
-4. **Especificação de Software**: Desenvolvimento em C no Visual Studio Code com extensões Raspberry Pi Pico, incluindo funções para leitura de ruído, controle de periféricos e interação com botões/joystick.
-5. **Implementação**: Codificação, compilação e testes na BitDogLab.
+Passo 2: Configuração dos Limites de Ruído
+O sistema pede para definir os limites mínimo e máximo de ruído, o que será feito através da interface de display e joystick.
+
+Tela Inicial: O display exibirá a mensagem "Detector De Ruído Iniciado". Para continuar, pressione o Botão A.
+Configuração do Valor Mínimo:
+O display exibirá a configuração do valor mínimo (ex: Min: 000).
+Use o Joystick X (esquerda/direita) para aumentar ou diminuir o valor do dígito selecionado.
+Use o Joystick Y (cima/baixo) para mover o cursor entre os dígitos.
+Após definir o valor mínimo, pressione o Botão A para passar para a configuração do valor máximo.
+Configuração do Valor Máximo:
+O display exibirá a configuração do valor máximo (ex: Max: 0000).
+Novamente, use o Joystick X e Joystick Y para ajustar os dígitos.
+Após definir o valor máximo, pressione o Botão A para finalizar a configuração.
+
+Passo 3: Modo de Operação
+Com os limites definidos, o sistema começa a monitorar o nível de ruído.
+
+Monitoramento de Ruído:
+
+O sistema irá constantemente monitorar o nível do microfone.
+Se o nível de ruído estiver dentro do intervalo predefinido, os LEDs WS2812 estarão verdes.
+Se o nível de ruído sair do intervalo (acima ou abaixo dos limites definidos), o sistema exibirá uma mensagem de alerta "FORA DO RANGE" no display e acionará os LEDs vermelhos.
+O buzzer emitirá um som de SOS para alertar sobre o desvio do intervalo.
+Solução de Problemas:
+
+Se os LEDs ficarem vermelhos e o sistema exibir a mensagem "FORA DO RANGE", significa que o valor do microfone está fora do intervalo definido.
+O buzzer continuará emitindo o sinal de SOS até que o sistema seja reiniciado pressionando o Botão A.
+Após pressionar o Botão A, o sistema voltará à tela de configuração e permitirá que os limites sejam ajustados novamente.
+
+Passo 4: Reinicializando o Sistema
+Se você desejar reiniciar o sistema ou realizar um reset para ajustar os parâmetros, faça o seguinte:
+
+Pressione o Botão A para reiniciar o sistema, reiniciando o Detector de Ruído, entrando novamente no modo de configuração.
+
+Ou pressione o Botão B para reiniciar o Raspberry Pi Pico e entrar no modo BOOTSEL.
+Isso apagará o código atual do dispositivo e permitirá reprogramá-lo se necessário.
+
+
+Passo 5: Desligando o Sistema
+Botão B: Entrar no modo BOOTSEL para reprogramar o dispositivo.
 
 ---
 
