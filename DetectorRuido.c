@@ -277,7 +277,8 @@ void update_display()
         ssd1306_draw_string(&ssd, buffer, 0, 0);
         snprintf(buffer, sizeof(buffer), "Max:%04d", threshold_max);
         ssd1306_draw_string(&ssd, buffer, 0, 8);
-        ssd1306_draw_string(&ssd, "Funcionando", 0, 40);
+        ssd1306_draw_string(&ssd, "Monitoramento", 0, 40);
+        ssd1306_draw_string(&ssd, "Iniciado", 0, 50); 
         break;
     }
     ssd1306_send_data(&ssd); // Envia os dados para o display
