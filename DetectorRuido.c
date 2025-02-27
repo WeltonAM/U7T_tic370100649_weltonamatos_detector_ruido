@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <math.h> // Adicionado para usar pow()
+#include <math.h> 
 #include "pico/stdlib.h"
 #include "hardware/adc.h"
 #include "hardware/timer.h"
@@ -50,7 +50,7 @@ int threshold_max = 0;                  // Limite máximo do range de detecção
 int step = 0;                           // Etapa atual do programa (0 a 3)
 int digit_pos = 0;                      // Posição do dígito sendo ajustado no range
 int digits_min[3] = {0, 0, 0};          // Dígitos do valor mínimo (centena, dezena, unidade)
-int digits_max[4] = {0, 0, 0, 0};      // Dígitos do valor máximo (milhar, centena, dezena, unidade)
+int digits_max[4] = {0, 0, 0, 0};       // Dígitos do valor máximo (milhar, centena, dezena, unidade)
 PIO pio = pio0;                         // Instância PIO para controle dos LEDs WS2812
 int sm = 0;                             // Máquina de estado para PIO
 uint32_t led_buffer[NUM_PIXELS] = {0};  // Buffer para os estados dos LEDs WS2812
